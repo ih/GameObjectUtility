@@ -1,0 +1,4 @@
+{
+	"name": "abstractionmachines.gameobjectutility",
+	"references": ["chrisnolet.quickoutline", "abstractionmachines.mathutility"]
+}

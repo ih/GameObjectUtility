@@ -1,0 +1,7 @@
+{
+  "name": "com.abstractionmachines.gameobjectutility",
+  "version": "0.0.0",
+  "displayName": "Game Object Utility",
+  "description": "Helper functions related to game objects",
+  "unity": "2021.3"
+}
