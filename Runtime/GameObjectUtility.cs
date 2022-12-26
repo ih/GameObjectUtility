@@ -31,14 +31,18 @@ namespace AbstractionMachines
         }
 
         // Scale gameobject to fit in a box
-        public static void ScaleToFitParent(GameObject targetObject, Vector3 containerSize)
+        // Assumes the orientation of the target object is the same as when it will be placed into the container
+        // since collider size may change due to rotation
+        // (see https://answers.unity.com/questions/1376150/size-of-collider-bounding-box-regardless-of-rotati.html)
+        // TODO find a robust way to take this into account when calculated targetScaledSize
+        public static void ScaleToFitParent(GameObject targetObject, Vector3 containerSize, float margin = .95f)
         {
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
             Quaternion originalLocalRotation = targetObject.transform.localRotation;
             targetObject.transform.SetParent(null, false);
             Vector3 targetScaledSize = GetHierarchySize(targetObject);
-
+            
             // find the dimension which has the biggest difference between target and container then scale the target
             // down based on that dimension
             Vector3 sizeDifference = targetScaledSize - containerSize;
@@ -62,7 +66,7 @@ namespace AbstractionMachines
             // Vector3 newScale = new Vector3(containerSize.x / targetTrueSize.x, containerSize.y / targetTrueSize.y,
             //   containerSize.z / targetTrueSize.z);
             targetLocalScale = newScale;
-            targetObject.transform.localScale = targetLocalScale;
+            targetObject.transform.localScale = targetLocalScale * margin;
             targetObject.transform.SetParent(parent, true);
             targetObject.transform.localPosition = originalLocalPosition;
             targetObject.transform.localRotation = originalLocalRotation;
