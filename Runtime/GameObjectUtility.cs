@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AbstractionMachines
@@ -41,7 +42,7 @@ namespace AbstractionMachines
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
             Quaternion originalLocalRotation = targetObject.transform.localRotation;
             targetObject.transform.SetParent(null, false);
-            Vector3 targetScaledSize = GetHierarchySize(targetObject);
+            Vector3 targetScaledSize = GetHierarchyBounds(targetObject).size;
             
             // find the dimension which has the biggest difference between target and container then scale the target
             // down based on that dimension
@@ -83,6 +84,16 @@ namespace AbstractionMachines
             child.transform.SetParent(empty.transform);
         }
 
+        public static void SetScaleToSize(GameObject targetObject, Vector3 size)
+        {
+            Vector3 targetObjectSize = GetHierarchyBounds(targetObject).size;
+            float newScaleX = size.x / targetObjectSize.x;
+            float newScaleY = size.y / targetObjectSize.y;
+            float newScaleZ = size.z / targetObjectSize.z;
+
+            targetObject.transform.localScale = new Vector3(newScaleX, newScaleY, newScaleZ);
+        }
+
         public static void Highlight(GameObject gameObject, Color? color = null)
         {
             if (gameObject == null)
@@ -115,22 +126,29 @@ namespace AbstractionMachines
             return gameObject.GetComponent<Outline>().enabled;
         }
 
-        public static Vector3 GetHierarchySize(GameObject gameObject)
+        public static Bounds GetHierarchyBounds(GameObject gameObject)
         {
             Bounds bounds = GetBounds(gameObject);
             // TODO do full traversal instead of just children
-            foreach (Transform child in gameObject.transform)
+            Queue<Transform> childQueue = new Queue<Transform>();
+            childQueue.Enqueue(gameObject.transform);
+            while (childQueue.Count > 0)
             {
-                Bounds childBounds = bounds;
-                if (child.GetComponent<Collider>() != null)
+                Transform current = childQueue.Dequeue();
+                foreach (Transform child in current)
                 {
-                    childBounds = GetBounds(child.gameObject);
+                    childQueue.Enqueue(child); 
                 }
 
-                bounds.Encapsulate(childBounds);
+                Bounds currentBounds = GetBounds(current.gameObject);
+                if (currentBounds.extents != Vector3.zero)
+                {
+                    bounds.Encapsulate(currentBounds);                   
+                }
             }
 
-            return bounds.size;
+
+            return bounds;
         }
 
         // Use collider then fallback to renderer
@@ -157,8 +175,10 @@ namespace AbstractionMachines
                 Renderer renderer = gameObject.GetComponent<Renderer>();
                 if (renderer == null)
                 {
-                    throw new ArgumentException(
-                        "Cannot calculate size of object that does not have a collider or renderer");
+                    Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
+                    Bounds emptyBounds = new Bounds();
+                    emptyBounds.center = gameObject.transform.position;
+                    return emptyBounds;
                 }
 
                 if (!renderer.enabled)
@@ -193,6 +213,18 @@ namespace AbstractionMachines
         {
             Renderer renderer = targetObject.GetComponentInChildren<Renderer>();
             return renderer != null && renderer.enabled;
+        }
+
+        public static Color GetHighlightColor(GameObject gameObject)
+        {
+            return gameObject.GetComponent<Outline>().OutlineColor; 
+        }
+
+        public static bool HasSize(GameObject gameObject)
+        {
+            Collider collider = gameObject.GetComponent<Collider>();
+            Renderer renderer = gameObject.GetComponent<Renderer>();
+            return collider || renderer; 
         }
     }
 }
