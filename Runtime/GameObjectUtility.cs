@@ -87,9 +87,9 @@ namespace AbstractionMachines
         public static void SetScaleToSize(GameObject targetObject, Vector3 size)
         {
             Vector3 targetObjectSize = GetHierarchyBounds(targetObject).size;
-            float newScaleX = size.x / targetObjectSize.x;
-            float newScaleY = size.y / targetObjectSize.y;
-            float newScaleZ = size.z / targetObjectSize.z;
+            float newScaleX = size.x / targetObjectSize.x * targetObject.transform.localScale.x;
+            float newScaleY = size.y / targetObjectSize.y * targetObject.transform.localScale.y;
+            float newScaleZ = size.z / targetObjectSize.z * targetObject.transform.localScale.z;
 
             targetObject.transform.localScale = new Vector3(newScaleX, newScaleY, newScaleZ);
         }
