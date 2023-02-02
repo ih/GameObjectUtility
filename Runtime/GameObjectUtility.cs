@@ -1,7 +1,4 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace AbstractionMachines
@@ -36,21 +33,25 @@ namespace AbstractionMachines
         // since collider size may change due to rotation
         // (see https://answers.unity.com/questions/1376150/size-of-collider-bounding-box-regardless-of-rotati.html)
         // TODO find a robust way to take this into account when calculated targetScaledSize
-        public static void ScaleToFitParent(GameObject targetObject, Vector3 containerSize, float margin = .95f)
+        public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f)
         {
+            Vector3 containerSize = GetHierarchyBounds(containerObject).size;
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
             Quaternion originalLocalRotation = targetObject.transform.localRotation;
             targetObject.transform.SetParent(null, false);
+
+            // rotate the target b/c that affects how its size is calculated due to how bounding boxes work
+            targetObject.transform.localRotation = containerObject.transform.rotation;
             Vector3 targetScaledSize = GetHierarchyBounds(targetObject).size;
-            
+
             // find the dimension which has the biggest difference between target and container then scale the target
             // down based on that dimension
             Vector3 sizeDifference = targetScaledSize - containerSize;
             MathUtility.ElementData maxDifferenceData = MathUtility.GetMaxComponent(sizeDifference);
 
 
-            var targetLocalScale = targetObject.transform.localScale;
+            Vector3 targetLocalScale = targetObject.transform.localScale;
             float targetScaleMaxDifference = targetLocalScale[maxDifferenceData.Index];
             float targetTrueSizeMaxDifference = targetScaledSize[maxDifferenceData.Index] / targetScaleMaxDifference;
 
@@ -130,20 +131,19 @@ namespace AbstractionMachines
         {
             Bounds bounds = GetBounds(gameObject);
             // TODO do full traversal instead of just children
-            Queue<Transform> childQueue = new Queue<Transform>();
+            var childQueue = new Queue<Transform>();
             childQueue.Enqueue(gameObject.transform);
             while (childQueue.Count > 0)
             {
                 Transform current = childQueue.Dequeue();
                 foreach (Transform child in current)
                 {
-                    childQueue.Enqueue(child); 
+                    childQueue.Enqueue(child);
                 }
-
                 Bounds currentBounds = GetBounds(current.gameObject);
                 if (currentBounds.extents != Vector3.zero)
                 {
-                    bounds.Encapsulate(currentBounds);                   
+                    bounds.Encapsulate(currentBounds);
                 }
             }
 
@@ -151,46 +151,29 @@ namespace AbstractionMachines
             return bounds;
         }
 
-        // Use collider then fallback to renderer
-        // handles when gameObject collider/renderer are disabled
+        // Use renderer bounds because they have a world based size as opposed to collider, which is local
+        // returns empty bounds if there is no renderer
         public static Bounds GetBounds(GameObject gameObject)
         {
-            Collider collider = gameObject.GetComponent<Collider>();
             Bounds bounds;
-            if (collider != null)
+            Renderer renderer = gameObject.GetComponent<Renderer>();
+            if (renderer == null)
             {
-                if (!collider.enabled)
-                {
-                    collider.enabled = true;
-                    bounds = collider.bounds;
-                    collider.enabled = false;
-                }
-                else
-                {
-                    bounds = collider.bounds;
-                }
+                Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
+                Bounds emptyBounds = new Bounds();
+                emptyBounds.center = gameObject.transform.position;
+                return emptyBounds;
+            }
+
+            if (!renderer.enabled)
+            {
+                renderer.enabled = true;
+                bounds = renderer.bounds;
+                renderer.enabled = false;
             }
             else
             {
-                Renderer renderer = gameObject.GetComponent<Renderer>();
-                if (renderer == null)
-                {
-                    Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
-                    Bounds emptyBounds = new Bounds();
-                    emptyBounds.center = gameObject.transform.position;
-                    return emptyBounds;
-                }
-
-                if (!renderer.enabled)
-                {
-                    renderer.enabled = true;
-                    bounds = renderer.bounds;
-                    renderer.enabled = false;
-                }
-                else
-                {
-                    bounds = renderer.bounds;
-                }
+                bounds = renderer.bounds;
             }
 
             return bounds;
@@ -217,14 +200,14 @@ namespace AbstractionMachines
 
         public static Color GetHighlightColor(GameObject gameObject)
         {
-            return gameObject.GetComponent<Outline>().OutlineColor; 
+            return gameObject.GetComponent<Outline>().OutlineColor;
         }
 
         public static bool HasSize(GameObject gameObject)
         {
             Collider collider = gameObject.GetComponent<Collider>();
             Renderer renderer = gameObject.GetComponent<Renderer>();
-            return collider || renderer; 
+            return collider || renderer;
         }
     }
 }

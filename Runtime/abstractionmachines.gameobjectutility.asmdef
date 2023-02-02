@@ -1,4 +1,7 @@
 {
-	"name": "abstractionmachines.gameobjectutility",
-	"references": ["chrisnolet.quickoutline", "abstractionmachines.mathutility"]
+  "name": "abstractionmachines.gameobjectutility",
+  "references": [
+    "chrisnolet.quickoutline",
+    "abstractionmachines.mathutility"
+  ]
 }
