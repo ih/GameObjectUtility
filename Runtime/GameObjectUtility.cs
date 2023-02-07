@@ -35,15 +35,21 @@ namespace AbstractionMachines
         // TODO find a robust way to take this into account when calculated targetScaledSize
         public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f)
         {
-            Vector3 containerSize = GetHierarchyBounds(containerObject).size;
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
             Quaternion originalLocalRotation = targetObject.transform.localRotation;
             targetObject.transform.SetParent(null, false);
-
+            // make sure to calculate the size of the container AFTER targetObject has parent set to null in
+            // case the parent is the container
+            Vector3 containerSize = GetHierarchyBounds(containerObject).size;
+            
             // rotate the target b/c that affects how its size is calculated due to how bounding boxes work
             targetObject.transform.localRotation = containerObject.transform.rotation;
             Vector3 targetScaledSize = GetHierarchyBounds(targetObject).size;
+            if (targetScaledSize == Vector3.zero)
+            {
+                return;
+            }
 
             // find the dimension which has the biggest difference between target and container then scale the target
             // down based on that dimension
@@ -88,6 +94,7 @@ namespace AbstractionMachines
         public static void SetScaleToSize(GameObject targetObject, Vector3 size)
         {
             Vector3 targetObjectSize = GetHierarchyBounds(targetObject).size;
+            // TODO review to see if this is correct 
             float newScaleX = size.x / targetObjectSize.x * targetObject.transform.localScale.x;
             float newScaleY = size.y / targetObjectSize.y * targetObject.transform.localScale.y;
             float newScaleZ = size.z / targetObjectSize.z * targetObject.transform.localScale.z;
