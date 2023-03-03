@@ -33,7 +33,7 @@ namespace AbstractionMachines
         // since collider size may change due to rotation
         // (see https://answers.unity.com/questions/1376150/size-of-collider-bounding-box-regardless-of-rotati.html)
         // TODO find a robust way to take this into account when calculated targetScaledSize
-        public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f)
+        public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f, bool containerRootOnly = false)
         {
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
@@ -41,7 +41,15 @@ namespace AbstractionMachines
             targetObject.transform.SetParent(null, false);
             // make sure to calculate the size of the container AFTER targetObject has parent set to null in
             // case the parent is the container
-            Vector3 containerSize = GetHierarchyBounds(containerObject).size;
+            Vector3 containerSize;
+            if (containerRootOnly)
+            {
+                containerSize = GetBounds(containerObject).size;
+            }
+            else
+            {
+                containerSize = GetHierarchyBounds(containerObject).size;               
+            }
             
             // rotate the target b/c that affects how its size is calculated due to how bounding boxes work
             targetObject.transform.localRotation = containerObject.transform.rotation;
