@@ -10,17 +10,11 @@ namespace AbstractionMachines
             Transform childTransform = child.transform;
             Transform parentTransform = parent.transform;
 
-            if (childTransform == parentTransform)
-            {
-                return true;
-            }
+            if (childTransform == parentTransform) return true;
 
             while (childTransform.parent != null)
             {
-                if (childTransform.parent == parentTransform)
-                {
-                    return true;
-                }
+                if (childTransform.parent == parentTransform) return true;
 
                 childTransform = childTransform.parent;
             }
@@ -33,7 +27,8 @@ namespace AbstractionMachines
         // since collider size may change due to rotation
         // (see https://answers.unity.com/questions/1376150/size-of-collider-bounding-box-regardless-of-rotati.html)
         // TODO find a robust way to take this into account when calculated targetScaledSize
-        public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f, bool containerRootOnly = false)
+        public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f,
+            bool containerRootOnly = false)
         {
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
@@ -43,21 +38,14 @@ namespace AbstractionMachines
             // case the parent is the container
             Vector3 containerSize;
             if (containerRootOnly)
-            {
                 containerSize = GetBounds(containerObject).size;
-            }
             else
-            {
-                containerSize = GetHierarchyBounds(containerObject).size;               
-            }
-            
+                containerSize = GetHierarchyBounds(containerObject).size;
+
             // rotate the target b/c that affects how its size is calculated due to how bounding boxes work
             targetObject.transform.localRotation = containerObject.transform.rotation;
             Vector3 targetScaledSize = GetHierarchyBounds(targetObject).size;
-            if (targetScaledSize == Vector3.zero)
-            {
-                return;
-            }
+            if (targetScaledSize == Vector3.zero) return;
 
             // find the dimension which has the biggest difference between target and container then scale the target
             // down based on that dimension
@@ -74,10 +62,7 @@ namespace AbstractionMachines
             // lock the dimensions when scaling
             float scaleDifferenceRatio = newScaleMaxDifference / targetLocalScale[maxDifferenceData.Index];
             Vector3 newScale = new Vector3();
-            for (int i = 0; i < 3; i++)
-            {
-                newScale[i] = scaleDifferenceRatio * targetLocalScale[i];
-            }
+            for (int i = 0; i < 3; i++) newScale[i] = scaleDifferenceRatio * targetLocalScale[i];
 
             // Vector3 newScale = new Vector3(containerSize.x / targetTrueSize.x, containerSize.y / targetTrueSize.y,
             //   containerSize.z / targetTrueSize.z);
@@ -112,16 +97,10 @@ namespace AbstractionMachines
 
         public static void Highlight(GameObject gameObject, Color? color = null)
         {
-            if (gameObject == null)
-            {
-                return;
-            }
+            if (gameObject == null) return;
 
             ;
-            if (gameObject.GetComponent<Outline>() == null)
-            {
-                gameObject.AddComponent<Outline>();
-            }
+            if (gameObject.GetComponent<Outline>() == null) gameObject.AddComponent<Outline>();
             gameObject.GetComponent<Outline>().enabled = true;
             gameObject.GetComponent<Outline>().OutlineColor = color ?? Color.green;
             // TODO clean up/make safer
@@ -129,10 +108,7 @@ namespace AbstractionMachines
 
         public static void UnHighlight(GameObject gameObject)
         {
-            if (gameObject == null)
-            {
-                return;
-            }
+            if (gameObject == null) return;
 
             gameObject.GetComponent<Outline>().enabled = false;
         }
@@ -151,15 +127,9 @@ namespace AbstractionMachines
             while (childQueue.Count > 0)
             {
                 Transform current = childQueue.Dequeue();
-                foreach (Transform child in current)
-                {
-                    childQueue.Enqueue(child);
-                }
+                foreach (Transform child in current) childQueue.Enqueue(child);
                 Bounds currentBounds = GetBounds(current.gameObject);
-                if (currentBounds.extents != Vector3.zero)
-                {
-                    bounds.Encapsulate(currentBounds);
-                }
+                if (currentBounds.extents != Vector3.zero) bounds.Encapsulate(currentBounds);
             }
 
 
@@ -170,6 +140,8 @@ namespace AbstractionMachines
         // returns empty bounds if there is no renderer
         public static Bounds GetBounds(GameObject gameObject)
         {
+            Quaternion originalRotation = gameObject.transform.rotation;
+            gameObject.transform.rotation = Quaternion.identity;
             Bounds bounds;
             Renderer renderer = gameObject.GetComponent<Renderer>();
             if (renderer == null)
@@ -177,6 +149,7 @@ namespace AbstractionMachines
                 Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
                 Bounds emptyBounds = new Bounds();
                 emptyBounds.center = gameObject.transform.position;
+                gameObject.transform.rotation = originalRotation; 
                 return emptyBounds;
             }
 
@@ -191,20 +164,15 @@ namespace AbstractionMachines
                 bounds = renderer.bounds;
             }
 
+            gameObject.transform.rotation = originalRotation;
             return bounds;
         }
 
         public static void SetVisibility(bool isVisible, GameObject targetObject)
         {
-            foreach (Renderer renderer in targetObject.GetComponentsInChildren<Renderer>())
-            {
-                renderer.enabled = isVisible;
-            }
+            foreach (Renderer renderer in targetObject.GetComponentsInChildren<Renderer>()) renderer.enabled = isVisible;
 
-            foreach (Collider collider in targetObject.GetComponentsInChildren<Collider>())
-            {
-                collider.enabled = isVisible;
-            }
+            foreach (Collider collider in targetObject.GetComponentsInChildren<Collider>()) collider.enabled = isVisible;
         }
 
         public static bool IsVisible(GameObject targetObject)
