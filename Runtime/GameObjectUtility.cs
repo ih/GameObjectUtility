@@ -30,6 +30,12 @@ namespace AbstractionMachines
         public static void ScaleToFit(GameObject targetObject, GameObject containerObject, float margin = .95f,
             bool containerRootOnly = false)
         {
+            // Isolate and rotate the container object
+            Transform containerParent = containerObject.transform.parent;
+            containerObject.transform.SetParent(null, true);
+            Quaternion originalContainerRotation = containerObject.transform.rotation;
+            containerObject.transform.rotation = Quaternion.identity;
+            
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
             Quaternion originalLocalRotation = targetObject.transform.localRotation;
@@ -38,13 +44,13 @@ namespace AbstractionMachines
             // case the parent is the container
             Vector3 containerSize;
             if (containerRootOnly)
-                containerSize = GetBounds(containerObject).size;
+                containerSize = GetRotationNormalizedBounds(containerObject).size;
             else
-                containerSize = GetHierarchyBounds(containerObject).size;
+                containerSize = GetRotationNormalizedHierarchyBounds(containerObject).size;
 
             // rotate the target b/c that affects how its size is calculated due to how bounding boxes work
             targetObject.transform.localRotation = containerObject.transform.rotation;
-            Vector3 targetScaledSize = GetHierarchyBounds(targetObject).size;
+            Vector3 targetScaledSize = GetRotationNormalizedHierarchyBounds(targetObject).size;
             if (targetScaledSize == Vector3.zero) return;
 
             // find the dimension which has the biggest difference between target and container then scale the target
@@ -71,6 +77,9 @@ namespace AbstractionMachines
             targetObject.transform.SetParent(parent, true);
             targetObject.transform.localPosition = originalLocalPosition;
             targetObject.transform.localRotation = originalLocalRotation;
+            
+            containerObject.transform.rotation = originalContainerRotation;
+            containerObject.transform.SetParent(containerParent, true); 
         }
 
         // Use this method to prevent the child scale from being skeweed
@@ -86,7 +95,7 @@ namespace AbstractionMachines
 
         public static void SetScaleToSize(GameObject targetObject, Vector3 size)
         {
-            Vector3 targetObjectSize = GetHierarchyBounds(targetObject).size;
+            Vector3 targetObjectSize = GetRotationNormalizedHierarchyBounds(targetObject).size;
             // TODO review to see if this is correct 
             float newScaleX = size.x / targetObjectSize.x * targetObject.transform.localScale.x;
             float newScaleY = size.y / targetObjectSize.y * targetObject.transform.localScale.y;
@@ -117,10 +126,11 @@ namespace AbstractionMachines
         {
             return gameObject.GetComponent<Outline>().enabled;
         }
-
-        public static Bounds GetHierarchyBounds(GameObject gameObject)
+        
+        // Normalized by rotation to 0 when detached from parent
+        public static Bounds GetRotationNormalizedHierarchyBounds(GameObject gameObject)
         {
-            Bounds bounds = GetBounds(gameObject);
+            Bounds bounds = GetRotationNormalizedBounds(gameObject);
             // TODO do full traversal instead of just children
             var childQueue = new Queue<Transform>();
             childQueue.Enqueue(gameObject.transform);
@@ -128,7 +138,7 @@ namespace AbstractionMachines
             {
                 Transform current = childQueue.Dequeue();
                 foreach (Transform child in current) childQueue.Enqueue(child);
-                Bounds currentBounds = GetBounds(current.gameObject);
+                Bounds currentBounds = GetRotationNormalizedBounds(current.gameObject);
                 if (currentBounds.extents != Vector3.zero) bounds.Encapsulate(currentBounds);
             }
 
@@ -138,10 +148,10 @@ namespace AbstractionMachines
 
         // Use renderer bounds because they have a world based size as opposed to collider, which is local
         // returns empty bounds if there is no renderer
-        public static Bounds GetBounds(GameObject gameObject)
+        // Normalized by rotation to 0 when detached from parent
+        public static Bounds GetRotationNormalizedBounds(GameObject gameObject)
         {
-            Quaternion originalRotation = gameObject.transform.rotation;
-            gameObject.transform.rotation = Quaternion.identity;
+
             Bounds bounds;
             Renderer renderer = gameObject.GetComponent<Renderer>();
             if (renderer == null)
@@ -149,10 +159,12 @@ namespace AbstractionMachines
                 Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
                 Bounds emptyBounds = new Bounds();
                 emptyBounds.center = gameObject.transform.position;
-                gameObject.transform.rotation = originalRotation; 
                 return emptyBounds;
             }
-
+            Transform gameObjectParent = gameObject.transform.parent;
+            gameObject.transform.SetParent(null, true);
+            Quaternion originalRotation = gameObject.transform.rotation;
+            gameObject.transform.rotation = Quaternion.identity;
             if (!renderer.enabled)
             {
                 renderer.enabled = true;
@@ -165,6 +177,7 @@ namespace AbstractionMachines
             }
 
             gameObject.transform.rotation = originalRotation;
+            gameObject.transform.SetParent(gameObjectParent, true);
             return bounds;
         }
 
