@@ -32,13 +32,15 @@ namespace AbstractionMachines
         {
             // Isolate and rotate the container object
             Transform containerParent = containerObject.transform.parent;
+            int containerSiblingIndex = containerObject.transform.GetSiblingIndex();
             containerObject.transform.SetParent(null, true);
             Quaternion originalContainerRotation = containerObject.transform.rotation;
             containerObject.transform.rotation = Quaternion.identity;
-            
+
             Transform parent = targetObject.transform.parent;
             Vector3 originalLocalPosition = targetObject.transform.localPosition;
             Quaternion originalLocalRotation = targetObject.transform.localRotation;
+            int targetObjectSiblingIndex = targetObject.transform.GetSiblingIndex();
             targetObject.transform.SetParent(null, false);
             // make sure to calculate the size of the container AFTER targetObject has parent set to null in
             // case the parent is the container
@@ -51,7 +53,20 @@ namespace AbstractionMachines
             // rotate the target b/c that affects how its size is calculated due to how bounding boxes work
             targetObject.transform.localRotation = containerObject.transform.rotation;
             Vector3 targetScaledSize = GetRotationNormalizedHierarchyBounds(targetObject).size;
-            if (targetScaledSize == Vector3.zero) return;
+            if (targetScaledSize == Vector3.zero)
+            {
+                targetObject.transform.SetParent(parent, true);
+                targetObject.transform.localPosition = originalLocalPosition;
+                targetObject.transform.localRotation = originalLocalRotation;
+                targetObject.transform.SetSiblingIndex(targetObjectSiblingIndex);
+                            
+                
+                containerObject.transform.rotation = originalContainerRotation;
+                containerObject.transform.SetParent(containerParent, true); 
+                containerObject.transform.SetSiblingIndex(containerSiblingIndex);
+                return;               
+            }
+
 
             // find the dimension which has the biggest difference between target and container then scale the target
             // down based on that dimension
@@ -80,6 +95,7 @@ namespace AbstractionMachines
             
             containerObject.transform.rotation = originalContainerRotation;
             containerObject.transform.SetParent(containerParent, true); 
+            containerObject.transform.SetSiblingIndex(containerSiblingIndex);
         }
 
         // Use this method to prevent the child scale from being skeweed
@@ -162,6 +178,7 @@ namespace AbstractionMachines
                 return emptyBounds;
             }
             Transform gameObjectParent = gameObject.transform.parent;
+            int gameObjectSiblingIndex = gameObject.transform.GetSiblingIndex();
             gameObject.transform.SetParent(null, true);
             Quaternion originalRotation = gameObject.transform.rotation;
             gameObject.transform.rotation = Quaternion.identity;
@@ -178,6 +195,7 @@ namespace AbstractionMachines
 
             gameObject.transform.rotation = originalRotation;
             gameObject.transform.SetParent(gameObjectParent, true);
+            gameObject.transform.SetSiblingIndex(gameObjectSiblingIndex);
             return bounds;
         }
 
