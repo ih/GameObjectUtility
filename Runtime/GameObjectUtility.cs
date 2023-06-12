@@ -59,12 +59,12 @@ namespace AbstractionMachines
                 targetObject.transform.localPosition = originalLocalPosition;
                 targetObject.transform.localRotation = originalLocalRotation;
                 targetObject.transform.SetSiblingIndex(targetObjectSiblingIndex);
-                            
-                
+
+
                 containerObject.transform.rotation = originalContainerRotation;
-                containerObject.transform.SetParent(containerParent, true); 
+                containerObject.transform.SetParent(containerParent, true);
                 containerObject.transform.SetSiblingIndex(containerSiblingIndex);
-                return;               
+                return;
             }
 
 
@@ -92,9 +92,9 @@ namespace AbstractionMachines
             targetObject.transform.SetParent(parent, true);
             targetObject.transform.localPosition = originalLocalPosition;
             targetObject.transform.localRotation = originalLocalRotation;
-            
+
             containerObject.transform.rotation = originalContainerRotation;
-            containerObject.transform.SetParent(containerParent, true); 
+            containerObject.transform.SetParent(containerParent, true);
             containerObject.transform.SetSiblingIndex(containerSiblingIndex);
         }
 
@@ -142,7 +142,7 @@ namespace AbstractionMachines
         {
             return gameObject.GetComponent<Outline>().enabled;
         }
-        
+
         // Normalized by rotation to 0 when detached from parent
         public static Bounds GetRotationNormalizedHierarchyBounds(GameObject gameObject)
         {
@@ -177,6 +177,7 @@ namespace AbstractionMachines
                 emptyBounds.center = gameObject.transform.position;
                 return emptyBounds;
             }
+
             Transform gameObjectParent = gameObject.transform.parent;
             int gameObjectSiblingIndex = gameObject.transform.GetSiblingIndex();
             gameObject.transform.SetParent(null, true);
@@ -201,9 +202,11 @@ namespace AbstractionMachines
 
         public static void SetVisibility(bool isVisible, GameObject targetObject)
         {
-            foreach (Renderer renderer in targetObject.GetComponentsInChildren<Renderer>()) renderer.enabled = isVisible;
+            foreach (Renderer renderer in targetObject.GetComponentsInChildren<Renderer>())
+                renderer.enabled = isVisible;
 
-            foreach (Collider collider in targetObject.GetComponentsInChildren<Collider>()) collider.enabled = isVisible;
+            foreach (Collider collider in targetObject.GetComponentsInChildren<Collider>())
+                collider.enabled = isVisible;
         }
 
         public static bool IsVisible(GameObject targetObject)
@@ -223,5 +226,18 @@ namespace AbstractionMachines
             Renderer renderer = gameObject.GetComponent<Renderer>();
             return collider || renderer;
         }
+        
+        public static int GetHiearchyDepth(GameObject gameObject)
+        {
+            int depth = 0;
+            Transform transform = gameObject.transform;
+            while (transform.parent != null)
+            {
+                depth++;
+                transform = transform.parent;
+            }
+            return depth; 
+        }
     }
+
 }
