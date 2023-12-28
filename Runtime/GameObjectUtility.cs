@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -111,13 +112,22 @@ namespace AbstractionMachines
 
         public static void SetScaleToSize(GameObject targetObject, Vector3 size)
         {
+
             Vector3 targetObjectSize = GetRotationNormalizedHierarchyBounds(targetObject).size;
             // TODO review to see if this is correct 
             float newScaleX = size.x / targetObjectSize.x * targetObject.transform.localScale.x;
             float newScaleY = size.y / targetObjectSize.y * targetObject.transform.localScale.y;
             float newScaleZ = size.z / targetObjectSize.z * targetObject.transform.localScale.z;
+            
 
-            targetObject.transform.localScale = new Vector3(newScaleX, newScaleY, newScaleZ);
+            // TODO investigate why this happens e.g. factorial function 
+            if (newScaleX < Single.PositiveInfinity)
+            {
+                targetObject.transform.localScale = new Vector3(newScaleX, newScaleY, newScaleZ);                   
+            }
+
+
+
         }
 
         public static void Highlight(GameObject gameObject, Color? color = null)
@@ -128,6 +138,7 @@ namespace AbstractionMachines
             if (gameObject.GetComponent<Outline>() == null) gameObject.AddComponent<Outline>();
             gameObject.GetComponent<Outline>().enabled = true;
             gameObject.GetComponent<Outline>().OutlineColor = color ?? Color.green;
+            gameObject.GetComponent<Outline>().OutlineWidth = 10;
             // TODO clean up/make safer
         }
 
@@ -172,7 +183,7 @@ namespace AbstractionMachines
             Renderer renderer = gameObject.GetComponent<Renderer>();
             if (renderer == null)
             {
-                Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
+                // Debug.LogWarning("Cannot calculate size of object that does not have a collider or renderer");
                 Bounds emptyBounds = new Bounds();
                 emptyBounds.center = gameObject.transform.position;
                 return emptyBounds;
